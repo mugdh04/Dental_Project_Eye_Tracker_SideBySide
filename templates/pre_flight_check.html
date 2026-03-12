@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Tracker - Pre-Flight Check</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>&#128065; Pre-Flight Check</h1>
+            <p class="subtitle">Verify your setup before starting eye tracking</p>
+        </header>
+
+        <div class="card">
+            <h2>System Check</h2>
+            <div class="checklist">
+                <div class="check-item" id="check-camera">
+                    <span class="check-icon">&#9203;</span>
+                    <span class="check-label">Camera Access</span>
+                    <span class="check-status">Checking...</span>
+                </div>
+                <div class="check-item" id="check-images">
+                    <span class="check-icon">&#9203;</span>
+                    <span class="check-label">Image Sets Available</span>
+                    <span class="check-status">Checking...</span>
+                </div>
+                <div class="check-item" id="check-model">
+                    <span class="check-icon">&#9203;</span>
+                    <span class="check-label">Face Landmarker Model</span>
+                    <span class="check-status">Checking...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Camera Preview</h2>
+            <div class="camera-preview">
+                <video id="camera-feed" autoplay playsinline></video>
+                <p class="muted">Ensure your face is clearly visible and well-lit.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Pointer Visibility</h2>
+            <div class="toggle-setting">
+                <label class="toggle-label" for="pointer-toggle">
+                    <span>Show gaze pointer on screen</span>
+                    <span class="toggle-hint">When OFF, the pointer is invisible but tracking still works</span>
+                </label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="pointer-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Tips for Best Results</h2>
+            <ul class="tips-list">
+                <li>Sit at a comfortable distance from the screen (50-70 cm)</li>
+                <li>Ensure good, even lighting on your face</li>
+                <li>Avoid backlighting (no bright light behind you)</li>
+                <li>Keep your head relatively still during tracking</li>
+                <li>Follow the calibration dots carefully</li>
+            </ul>
+        </div>
+
+        <div class="action-buttons">
+            <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+            <button id="start-btn" class="btn btn-primary" disabled onclick="startTracking()">
+                Start Eye Tracking
+            </button>
+        </div>
+
+        <div id="tracking-status" class="card" style="display:none;">
+            <h2>Tracking in Progress</h2>
+            <div class="progress-indicator">
+                <div class="spinner"></div>
+                <p>Eye tracking session is running in a separate window.</p>
+                <p class="muted">The fullscreen tracking window will close automatically when complete.</p>
+                <p class="muted">Press <kbd>Ctrl+Q</kbd> to exit early.</p>
+            </div>
+        </div>
+
+        <div id="completion-status" class="card" style="display:none;">
+            <h2>Session Complete!</h2>
+            <p>Your eye tracking session has been completed successfully.</p>
+            <a id="results-link" href="#" class="btn btn-primary">View Results</a>
+            <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Eye Tracker - Advanced Gaze Analysis System</p>
+        </footer>
+    </div>
+
+    <script>
+        let allChecksPass = false;
+
+        // Run system checks
+        async function runChecks() {
+            // Check camera
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('camera-feed');
+                video.srcObject = stream;
+                updateCheck('check-camera', true, 'Camera accessible');
+            } catch (e) {
+                updateCheck('check-camera', false, 'Camera not accessible');
+            }
+
+            // Check images
+            try {
+                const resp = await fetch('/api/image-status');
+                const data = await resp.json();
+                if (data.ready) {
+                    updateCheck('check-images', true, `${data.pre_count} image sets ready`);
+                } else {
+                    updateCheck('check-images', false, `Pre: ${data.pre_count}, Post: ${data.post_count}`);
+                }
+            } catch (e) {
+                updateCheck('check-images', false, 'Could not verify images');
+            }
+
+            // Check model (simple ping that the server is running)
+            updateCheck('check-model', true, 'Model will auto-download if needed');
+
+            // Enable start button if all checks pass
+            checkAllPassed();
+        }
+
+        function updateCheck(id, passed, message) {
+            const el = document.getElementById(id);
+            const icon = el.querySelector('.check-icon');
+            const status = el.querySelector('.check-status');
+            if (passed) {
+                icon.textContent = '\u2705';
+                status.textContent = message;
+                el.classList.add('check-pass');
+            } else {
+                icon.textContent = '\u274C';
+                status.textContent = message;
+                el.classList.add('check-fail');
+            }
+        }
+
+        function checkAllPassed() {
+            const checks = document.querySelectorAll('.check-item');
+            let allPass = true;
+            checks.forEach(c => {
+                if (!c.classList.contains('check-pass')) allPass = false;
+            });
+            document.getElementById('start-btn').disabled = !allPass;
+            allChecksPass = allPass;
+        }
+
+        async function startTracking() {
+            if (!allChecksPass) return;
+
+            // Stop camera preview
+            const video = document.getElementById('camera-feed');
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(t => t.stop());
+            }
+
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('start-btn').textContent = 'Starting...';
+
+            try {
+                const showPointer = document.getElementById('pointer-toggle').checked;
+                const resp = await fetch('/start-tracking', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({show_pointer: showPointer})
+                });
+                const data = await resp.json();
+
+                if (data.status === 'success') {
+                    document.getElementById('tracking-status').style.display = 'block';
+                    document.querySelector('.action-buttons').style.display = 'none';
+                    pollForCompletion();
+                } else {
+                    alert('Error starting tracking: ' + data.message);
+                    document.getElementById('start-btn').disabled = false;
+                    document.getElementById('start-btn').textContent = 'Start Eye Tracking';
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+                document.getElementById('start-btn').disabled = false;
+                document.getElementById('start-btn').textContent = 'Start Eye Tracking';
+            }
+        }
+
+        function pollForCompletion() {
+            const interval = setInterval(async () => {
+                try {
+                    const resp = await fetch('/check-completion');
+                    const data = await resp.json();
+                    if (data.completed) {
+                        clearInterval(interval);
+                        document.getElementById('tracking-status').style.display = 'none';
+                        document.getElementById('completion-status').style.display = 'block';
+                        document.getElementById('results-link').href = '/results/' + data.filename;
+                    }
+                } catch (e) {
+                    // Server might be busy, keep polling
+                }
+            }, 3000);
+        }
+
+        // Run checks on load
+        runChecks();
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Tracker - Error</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>&#128065; Error</h1>
+        </header>
+
+        <div class="card error-card">
+            <h2>Something went wrong</h2>
+            <p class="error-message">{{ error_message or "An unexpected error occurred." }}</p>
+
+            {% if fix_instructions %}
+            <h3>How to Fix</h3>
+            <ul>
+                {% for instruction in fix_instructions %}
+                <li>{{ instruction }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+
+        <div class="action-buttons">
+            <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Eye Tracker - Advanced Gaze Analysis System</p>
+        </footer>
+    </div>
+</body>
+</html>

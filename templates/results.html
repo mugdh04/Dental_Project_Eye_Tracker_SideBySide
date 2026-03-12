@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Tracker - Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>&#128065; Tracking Results</h1>
+            <p class="subtitle">{{ filename }}</p>
+        </header>
+
+        {% if sessions %}
+        {% for session in sessions %}
+        <div class="card session-card">
+            <h2>{{ session.name }}</h2>
+
+            <div class="side-by-side">
+                <!-- Pre Treatment (left) -->
+                <div class="side-panel">
+                    <h3 class="panel-title pre-title">Pre Treatment</h3>
+                    {% if session.pre_aois %}
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>AOI</th>
+                                <th>First Fixation (s)</th>
+                                <th>Total Fixation (s)</th>
+                                <th>Blinks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for aoi in session.pre_aois %}
+                            <tr>
+                                <td>{{ aoi.name }}</td>
+                                <td>{{ "%.2f"|format(aoi.first_fixation) }}</td>
+                                <td>{{ "%.2f"|format(aoi.total_fixation) }}</td>
+                                <td>{{ aoi.blinks }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% endif %}
+                    <div class="session-summary">
+                        <p><strong>First Focused AOI:</strong> {{ session.pre_first_focused or 'None' }}</p>
+                        <p><strong>Most Focused AOI:</strong> {{ session.pre_most_focused or 'None' }}</p>
+                    </div>
+                </div>
+
+                <!-- Post Treatment (right) -->
+                <div class="side-panel">
+                    <h3 class="panel-title post-title">Post Treatment</h3>
+                    {% if session.post_aois %}
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>AOI</th>
+                                <th>First Fixation (s)</th>
+                                <th>Total Fixation (s)</th>
+                                <th>Blinks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for aoi in session.post_aois %}
+                            <tr>
+                                <td>{{ aoi.name }}</td>
+                                <td>{{ "%.2f"|format(aoi.first_fixation) }}</td>
+                                <td>{{ "%.2f"|format(aoi.total_fixation) }}</td>
+                                <td>{{ aoi.blinks }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% endif %}
+                    <div class="session-summary">
+                        <p><strong>First Focused AOI:</strong> {{ session.post_first_focused or 'None' }}</p>
+                        <p><strong>Most Focused AOI:</strong> {{ session.post_most_focused or 'None' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if summary %}
+        <div class="card summary-card">
+            <h2>Overall Summary</h2>
+            <div class="summary-grid">
+                {% if summary.total_blinks %}
+                <div class="summary-item">
+                    <span class="summary-label">Total Blinks</span>
+                    <span class="summary-value">{{ summary.total_blinks }}</span>
+                </div>
+                {% endif %}
+                {% if summary.blink_rate %}
+                <div class="summary-item">
+                    <span class="summary-label">Blink Rate (blinks/min)</span>
+                    <span class="summary-value">{{ summary.blink_rate }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="action-buttons">
+            <a href="/download-results/{{ filename }}" class="btn btn-primary">Download CSV</a>
+            <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+
+        {% else %}
+        <div class="card">
+            <p>No session data found in this results file.</p>
+            <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+        {% endif %}
+
+        <footer>
+            <p>&copy; 2025 Eye Tracker - Advanced Gaze Analysis System</p>
+        </footer>
+    </div>
+</body>
+</html>

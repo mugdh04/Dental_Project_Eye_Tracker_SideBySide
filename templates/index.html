@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Tracker - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>&#128065; Eye Tracker</h1>
+            <p class="subtitle">Advanced Gaze Analysis System</p>
+        </header>
+
+        <div class="card">
+            <h2>Image Status</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="status-label">Pre-Treatment Images</span>
+                    <span class="status-value" id="pre-count">{{ pre_count }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Post-Treatment Images</span>
+                    <span class="status-value" id="post-count">{{ post_count }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Status</span>
+                    <span class="status-value {% if pre_count == post_count and pre_count > 0 %}status-ready{% else %}status-warning{% endif %}">
+                        {% if pre_count == post_count and pre_count > 0 %}
+                            Ready ({{ pre_count }} sets)
+                        {% elif pre_count == 0 and post_count == 0 %}
+                            No images uploaded
+                        {% else %}
+                            Mismatch ({{ pre_count }} pre / {{ post_count }} post)
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <a href="/view-images" class="btn btn-secondary">View Images</a>
+        </div>
+
+        <div class="card">
+            <h2>Start Eye Tracking</h2>
+            <form id="tracking-form" action="/pre-flight-check" method="get">
+                <div class="form-group">
+                    <label for="group">Select Group</label>
+                    <select id="group" name="group" required>
+                        <option value="">-- Select Group --</option>
+                        <option value="orthodontist">Orthodontist</option>
+                        <option value="dentist">Dentist</option>
+                        <option value="layperson">Layperson</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="session">Session Name</label>
+                    <input type="text" id="session" name="session" placeholder="Enter session name" required>
+                </div>
+                <button type="submit" class="btn btn-primary" {% if pre_count != post_count or pre_count == 0 %}disabled{% endif %}>
+                    Proceed to Pre-Flight Check
+                </button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Previous Results</h2>
+            <div id="results-list">
+                <!-- Results will be loaded dynamically -->
+            </div>
+        </div>
+
+        <div class="card instructions">
+            <h2>Instructions</h2>
+            <ol>
+                <li>Ensure pre and post treatment images are placed in the <code>images/pre</code> and <code>images/post</code> folders with matching filenames (e.g., 1.png, 2.png).</li>
+                <li>Select your group and enter a session name.</li>
+                <li>Complete the pre-flight check to verify camera and images.</li>
+                <li>Follow the calibration prompts by looking at each green dot.</li>
+                <li>Images will be displayed for 30 seconds each (pre then post).</li>
+                <li>Press <kbd>Ctrl+Q</kbd> to exit early at any time.</li>
+                <li>Results will be saved as CSV files in the logs folder.</li>
+            </ol>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Eye Tracker - Advanced Gaze Analysis System</p>
+        </footer>
+    </div>
+
+    <script>
+        // Load previous results
+        fetch('/api/results-list')
+            .then(r => {
+                if (!r.ok) return;
+                return r.json();
+            })
+            .then(data => {
+                if (!data || !data.files || data.files.length === 0) {
+                    document.getElementById('results-list').innerHTML = '<p class="muted">No results found yet.</p>';
+                    return;
+                }
+                let html = '<ul class="results-links">';
+                data.files.forEach(f => {
+                    html += `<li><a href="/results/${f}">${f}</a> <a href="/download-results/${f}" class="btn-small">Download</a></li>`;
+                });
+                html += '</ul>';
+                document.getElementById('results-list').innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('results-list').innerHTML = '<p class="muted">No results found yet.</p>';
+            });
+    </script>
+</body>
+</html>

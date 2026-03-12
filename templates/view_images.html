@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Tracker - View Images</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>&#128065; Image Gallery</h1>
+            <p class="subtitle">Pre & Post Treatment Images</p>
+        </header>
+
+        <div class="card">
+            <h2>Image Summary</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="status-label">Pre-Treatment</span>
+                    <span class="status-value">{{ pre_count }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Post-Treatment</span>
+                    <span class="status-value">{{ post_count }}</span>
+                </div>
+            </div>
+        </div>
+
+        {% if image_sets %}
+        {% for img_set in image_sets %}
+        <div class="card image-set-card">
+            <h3>Image Set #{{ img_set.id }}</h3>
+            <div class="image-pair">
+                <div class="image-container">
+                    <h4>Pre-Treatment</h4>
+                    <img src="{{ img_set.pre_path }}" alt="Pre image {{ img_set.id }}" loading="lazy">
+                </div>
+                <div class="image-container">
+                    <h4>Post-Treatment</h4>
+                    <img src="{{ img_set.post_path }}" alt="Post image {{ img_set.id }}" loading="lazy">
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="card">
+            <p class="muted">No image sets found. Please place matching pre and post images in the <code>images/pre</code> and <code>images/post</code> folders.</p>
+        </div>
+        {% endif %}
+
+        <div class="action-buttons">
+            <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Eye Tracker - Advanced Gaze Analysis System</p>
+        </footer>
+    </div>
+</body>
+</html>
