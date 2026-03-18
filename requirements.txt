@@ -2,8 +2,7 @@ opencv-python
 mediapipe>=0.10.14
 numpy
 Pillow
-keyboard
-tk
-flask
-pyinstaller
-pywin32
+PySide6>=6.6.0
+nuitka>=2.6.3
+ordered-set
+zstandard

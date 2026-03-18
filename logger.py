@@ -16,6 +16,8 @@ class AOILogger:
         self.total_sessions = 0
         self.summary_report_time = int(time.time())
         self.current_image_id = "1"  # Changed from index to ID
+        self._was_blinking = False  # Track blink state transitions
+        self._last_update_time = None  # For real elapsed time
         self.reset_session_data()
 
     def reset_session_data(self):
@@ -36,7 +38,20 @@ class AOILogger:
         self.most_focused_aoi = {region: None for region in self.regions}
 
     def update(self, pointer_pos, is_blinking):
-        current_time = time.time()
+        current_time = float(time.time())
+        is_blinking = bool(is_blinking)
+
+        # Calculate real elapsed time since last update
+        if self._last_update_time is None:
+            dt = 0.0
+        else:
+            dt = float(current_time - self._last_update_time)
+        self._last_update_time = current_time
+
+        # Detect blink transitions (not every frame)
+        blink_event = is_blinking and not self._was_blinking
+        self._was_blinking = is_blinking
+
         for name, ((x1, y1), (x2, y2)) in self.aois.items():
             inside = x1 <= pointer_pos[0] <= x2 and y1 <= pointer_pos[1] <= y2
             aoi = self.aoi_data[name]
@@ -49,14 +64,14 @@ class AOILogger:
                     for region in self.first_focused_aoi:
                         if name.startswith(region + "_") and self.first_focused_aoi[region] is None:
                             self.first_focused_aoi[region] = name.split("_", 1)[1]
-                if is_blinking:
+                if blink_event:
                     aoi["blink_count"] += 1
-                else:
-                    aoi["total_time"] += 0.1
+                if not is_blinking:
+                    aoi["total_time"] += dt
             else:
                 aoi["entry_time"] = None
 
-        if is_blinking:
+        if blink_event:
             self.blink_count += 1
 
     def export(self, filename=None):
@@ -137,9 +152,10 @@ class AOILogger:
 
     def export_all_sessions(self, filename=None):
         if filename is None:
+            from core.paths import data_path
             safe_group = self.group.replace(" ", "_")
             safe_session = self.session.replace(" ", "_")
-            filename = f"logs/{safe_group}_{safe_session}_{self.summary_report_time}.csv"
+            filename = data_path(f"logs/{safe_group}_{safe_session}_{self.summary_report_time}.csv")
         output_dir = os.path.dirname(filename)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir, exist_ok=True)
@@ -162,4 +178,6 @@ class AOILogger:
         self.aois = aois
         self.session_name = session_name
         self.current_image_id = image_id  # Store actual image ID
+        self._was_blinking = False
+        self._last_update_time = None
         self.reset_session_data()

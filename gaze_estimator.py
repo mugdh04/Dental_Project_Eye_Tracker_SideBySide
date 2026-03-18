@@ -5,21 +5,7 @@ import numpy as np
 from collections import deque
 import urllib.request
 
-def resource_path(relative_path):
-    """ Get absolute path to resource for PyInstaller """
-    if hasattr(sys, '_MEIPASS'):
-        base_path = sys._MEIPASS
-    else:
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
-
-def get_data_path(relative_path):
-    """Get path for data files that should be in the executable's directory"""
-    if getattr(sys, 'frozen', False):
-        base_path = os.path.dirname(sys.executable)
-    else:
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
+from core.paths import resource_path, data_path as get_data_path
 
 def download_model_if_needed():
     """Download the face landmarker model if not present"""
@@ -172,7 +158,7 @@ class GazeEstimator:
         right_ratio = right_height / (right_width + 1e-6)
 
         avg_ratio = (left_ratio + right_ratio) / 2
-        return avg_ratio < self.blink_threshold
+        return bool(avg_ratio < self.blink_threshold)
 
     def _apply_velocity_smoothing(self, current_pos):
         """Apply velocity-based smoothing for more natural movement"""
